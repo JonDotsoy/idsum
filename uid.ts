@@ -18,16 +18,26 @@ enum HandlerKind {
   render_id = "render_id",
 }
 
-let outputIDKind = IDKind.uuid;
+let outputIDKind = IDKind.ulid;
 let handlerKind = HandlerKind.render_id;
 let endWithNewLine = true;
+let ulidSeedTime: number | undefined;
 
 const options: Record<
   string,
-  (nextArg: () => string | undefined) => void
+  (nextArg?: string) => void
 > = {
+  "--uuid"() {
+    outputIDKind = IDKind.uuid;
+  },
+  get "--uuid-v4"() {
+    return this["--uuid"];
+  },
   "--ulid"() {
     outputIDKind = IDKind.ulid;
+  },
+  "--ulid-seed-time"(asd) {
+    ulidSeedTime = Number(asd);
   },
   "--objectid"() {
     outputIDKind = IDKind.objectid;
@@ -51,7 +61,7 @@ const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
     return new TextEncoder().encode(crypto.randomUUID());
   },
   ulid() {
-    return new TextEncoder().encode(ulid());
+    return new TextEncoder().encode(ulid(ulidSeedTime));
   },
   objectid() {
     return encode(objectId());
@@ -60,7 +70,19 @@ const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
 
 const handlers = {
   help() {
-    return new TextEncoder().encode(`Usage: uid`);
+    const usageLine = `Usage: uid`;
+
+    const help = Object.entries(options).map(([optionKey, optionHandler]) =>
+      optionHandler.length
+        ? `[${optionKey} <${
+          Reflect.get(optionHandler, Symbol.for(`targetValueName`)) ?? `value`
+        }>]`
+        : `[${optionKey}]`
+    ).join(
+      ` `,
+    );
+
+    return new TextEncoder().encode(`${usageLine} ${help}`);
   },
   async render_id() {
     return await printCommands[outputIDKind]();
@@ -71,7 +93,7 @@ const main = async () => {
   const args = Deno.args[Symbol.iterator]();
   for (const arg of args) {
     if (Reflect.has(options, arg)) {
-      await options[arg](() => args.next().value);
+      await options[arg](options[arg].length ? args.next().value : undefined);
     }
   }
 
