@@ -1,6 +1,6 @@
-import { ulid } from "ulid";
-import { ObjectId } from "bson";
-import { flag, flags, isNumberAt, Rule, Test } from "@jondotsoy/flags"
+import { ulid } from "npm:ulid";
+import { ObjectId } from "npm:bson";
+import { flag, flags, isNumberAt, Rule, Test } from "npm:@jondotsoy/flags"
 
 const SpecDescribeSymbol = Symbol('SpecDescribeSymbol')
 type SpecDescribe = {
@@ -82,13 +82,13 @@ const handlers = {
 } satisfies Record<HandlerKind, () => Uint8Array | Promise<Uint8Array>>;
 
 
-const parsed = flags<FlagsOptions>(process.argv.slice(2), {}, flagsRules)
+const parsed = flags<FlagsOptions>(Deno.args, {}, flagsRules)
 
 ulidSeedTime = parsed.ulidSeedTime
 
 const output = await handlers[handlerKind]();
 
-process.stdout.write(output);
+Deno.stdout.write(output);
 if (endWithNewLine) {
-  process.stdout.write(new TextEncoder().encode(`\n`));
+  Deno.stdout.write(new TextEncoder().encode(`\n`));
 }
