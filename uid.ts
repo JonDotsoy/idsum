@@ -1,11 +1,20 @@
-import { ulid } from "https://deno.land/x/ulid@v0.2.0/mod.ts";
-import {
-  decodeString,
-  getDate,
-  isValid,
-  objectId,
-} from "https://deno.land/x/objectid@0.2.0/mod.ts";
-import { encode } from "https://deno.land/std@0.194.0/encoding/hex.ts";
+import { ulid } from "ulid";
+import { ObjectId } from "bson";
+import { flag, flags, isNumberAt, Rule, Test } from "@jondotsoy/flags"
+
+const SpecDescribeSymbol = Symbol('SpecDescribeSymbol')
+type SpecDescribe = {
+  withValue?: boolean
+}
+
+const getDescribe = <D extends Test<any>>(test: D): SpecDescribe => {
+  return Reflect.get(test, SpecDescribeSymbol) ?? {}
+}
+
+const describe: <D extends Test<any>>(test: D, spec?: SpecDescribe) => D = (test, spec) => {
+  if (spec) Reflect.set(test, SpecDescribeSymbol, spec)
+  return test
+};
 
 enum IDKind {
   uuid = "uuid",
@@ -23,38 +32,18 @@ let handlerKind = HandlerKind.render_id;
 let endWithNewLine = true;
 let ulidSeedTime: number | undefined;
 
-const options: Record<
-  string,
-  (nextArg?: string) => void
-> = {
-  "--uuid"() {
-    outputIDKind = IDKind.uuid;
-  },
-  get "--uuid-v4"() {
-    return this["--uuid"];
-  },
-  "--ulid"() {
-    outputIDKind = IDKind.ulid;
-  },
-  "--ulid-seed-time"(asd) {
-    ulidSeedTime = Number(asd);
-  },
-  "--objectid"() {
-    outputIDKind = IDKind.objectid;
-  },
-  "--zero"() {
-    endWithNewLine = false;
-  },
-  get "-z"() {
-    return this["--zero"];
-  },
-  "--help"() {
-    handlerKind = HandlerKind.help;
-  },
-  get "-h"() {
-    return this["--help"];
-  },
-};
+type FlagsOptions = {
+  ulidSeedTime: number,
+}
+
+const flagsRules: Rule<FlagsOptions>[] = [
+  [flag('--uuid', '--uuid-v4'), () => outputIDKind = IDKind.uuid],
+  [flag('--ulid'), () => outputIDKind = IDKind.ulid],
+  [describe(flag('--ulid-seed-time'), { withValue: true }), isNumberAt('ulidSeedTime')],
+  [flag('--objectid'), () => outputIDKind = IDKind.objectid],
+  [flag('--zero', '-z'), () => endWithNewLine = false],
+  [flag('--help', '-h'), () => handlerKind = HandlerKind.help],
+]
 
 const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
   uuid() {
@@ -64,7 +53,7 @@ const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
     return new TextEncoder().encode(ulid(ulidSeedTime));
   },
   objectid() {
-    return encode(objectId());
+    return new TextEncoder().encode(new ObjectId().toHexString());
   },
 };
 
@@ -72,15 +61,18 @@ const handlers = {
   help() {
     const usageLine = `Usage: uid`;
 
-    const help = Object.entries(options).map(([optionKey, optionHandler]) =>
-      optionHandler.length
-        ? `[${optionKey} <${
-          Reflect.get(optionHandler, Symbol.for(`targetValueName`)) ?? `value`
-        }>]`
-        : `[${optionKey}]`
-    ).join(
-      ` `,
-    );
+    const help = flagsRules.reduce((acc: null | string, [test]) => {
+      const spec = getDescribe(test)
+
+      let contact: null | string = null
+
+      for (const name of test.names ?? []) {
+        const label = spec.withValue ? `${name} <value>` : name
+        contact = contact ? `${contact} [${label}]` : `[${label}]`
+      }
+
+      return contact ? acc ? `${acc} ${contact}` : contact : acc
+    }, null);
 
     return new TextEncoder().encode(`${usageLine} ${help}`);
   },
@@ -89,20 +81,14 @@ const handlers = {
   },
 } satisfies Record<HandlerKind, () => Uint8Array | Promise<Uint8Array>>;
 
-const main = async () => {
-  const args = Deno.args[Symbol.iterator]();
-  for (const arg of args) {
-    if (Reflect.has(options, arg)) {
-      await options[arg](options[arg].length ? args.next().value : undefined);
-    }
-  }
 
-  const output = await handlers[handlerKind]();
+const parsed = flags<FlagsOptions>(process.argv.slice(2), {}, flagsRules)
 
-  Deno.stdout.write(output);
-  if (endWithNewLine) {
-    Deno.stdout.write(new TextEncoder().encode(`\n`));
-  }
-};
+ulidSeedTime = parsed.ulidSeedTime
 
-await main();
+const output = await handlers[handlerKind]();
+
+process.stdout.write(output);
+if (endWithNewLine) {
+  process.stdout.write(new TextEncoder().encode(`\n`));
+}
