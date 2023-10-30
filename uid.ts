@@ -1,19 +1,22 @@
 import { ulid } from "npm:ulid";
 import { ObjectId } from "npm:bson";
-import { flag, flags, isNumberAt, Rule, Test } from "npm:@jondotsoy/flags"
+import { flag, flags, isNumberAt, Rule, Test } from "npm:@jondotsoy/flags";
 
-const SpecDescribeSymbol = Symbol('SpecDescribeSymbol')
+const SpecDescribeSymbol = Symbol("SpecDescribeSymbol");
 type SpecDescribe = {
-  withValue?: boolean
-}
+  withValue?: boolean;
+};
 
 const getDescribe = <D extends Test<any>>(test: D): SpecDescribe => {
-  return Reflect.get(test, SpecDescribeSymbol) ?? {}
-}
+  return Reflect.get(test, SpecDescribeSymbol) ?? {};
+};
 
-const describe: <D extends Test<any>>(test: D, spec?: SpecDescribe) => D = (test, spec) => {
-  if (spec) Reflect.set(test, SpecDescribeSymbol, spec)
-  return test
+const describe: <D extends Test<any>>(test: D, spec?: SpecDescribe) => D = (
+  test,
+  spec,
+) => {
+  if (spec) Reflect.set(test, SpecDescribeSymbol, spec);
+  return test;
 };
 
 enum IDKind {
@@ -33,17 +36,20 @@ let endWithNewLine = true;
 let ulidSeedTime: number | undefined;
 
 type FlagsOptions = {
-  ulidSeedTime: number,
-}
+  ulidSeedTime: number;
+};
 
 const flagsRules: Rule<FlagsOptions>[] = [
-  [flag('--uuid', '--uuid-v4'), () => outputIDKind = IDKind.uuid],
-  [flag('--ulid'), () => outputIDKind = IDKind.ulid],
-  [describe(flag('--ulid-seed-time'), { withValue: true }), isNumberAt('ulidSeedTime')],
-  [flag('--objectid'), () => outputIDKind = IDKind.objectid],
-  [flag('--zero', '-z'), () => endWithNewLine = false],
-  [flag('--help', '-h'), () => handlerKind = HandlerKind.help],
-]
+  [flag("--uuid", "--uuid-v4"), () => outputIDKind = IDKind.uuid],
+  [flag("--ulid"), () => outputIDKind = IDKind.ulid],
+  [
+    describe(flag("--ulid-seed-time"), { withValue: true }),
+    isNumberAt("ulidSeedTime"),
+  ],
+  [flag("--objectid"), () => outputIDKind = IDKind.objectid],
+  [flag("--zero", "-z"), () => endWithNewLine = false],
+  [flag("--help", "-h"), () => handlerKind = HandlerKind.help],
+];
 
 const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
   uuid() {
@@ -62,16 +68,16 @@ const handlers = {
     const usageLine = `Usage: uid`;
 
     const help = flagsRules.reduce((acc: null | string, [test]) => {
-      const spec = getDescribe(test)
+      const spec = getDescribe(test);
 
-      let contact: null | string = null
+      let contact: null | string = null;
 
       for (const name of test.names ?? []) {
-        const label = spec.withValue ? `${name} <value>` : name
-        contact = contact ? `${contact} [${label}]` : `[${label}]`
+        const label = spec.withValue ? `${name} <value>` : name;
+        contact = contact ? `${contact} [${label}]` : `[${label}]`;
       }
 
-      return contact ? acc ? `${acc} ${contact}` : contact : acc
+      return contact ? acc ? `${acc} ${contact}` : contact : acc;
     }, null);
 
     return new TextEncoder().encode(`${usageLine} ${help}`);
@@ -81,10 +87,9 @@ const handlers = {
   },
 } satisfies Record<HandlerKind, () => Uint8Array | Promise<Uint8Array>>;
 
+const parsed = flags<FlagsOptions>(Deno.args, {}, flagsRules);
 
-const parsed = flags<FlagsOptions>(Deno.args, {}, flagsRules)
-
-ulidSeedTime = parsed.ulidSeedTime
+ulidSeedTime = parsed.ulidSeedTime;
 
 const output = await handlers[handlerKind]();
 
