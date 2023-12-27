@@ -1,6 +1,6 @@
-import { ulid } from "npm:ulid";
-import { ObjectId } from "npm:bson";
-import { flag, flags, isNumberAt, Rule, Test } from "npm:@jondotsoy/flags";
+import { ulid } from "ulid";
+import { ObjectId } from "bson";
+import { flag, flags, isNumberAt, Rule, Test, makeHelmMessage, describe } from "@jondotsoy/flags";
 
 const SpecDescribeSymbol = Symbol("SpecDescribeSymbol");
 type SpecDescribe = {
@@ -9,14 +9,6 @@ type SpecDescribe = {
 
 const getDescribe = <D extends Test<any>>(test: D): SpecDescribe => {
   return Reflect.get(test, SpecDescribeSymbol) ?? {};
-};
-
-const describe: <D extends Test<any>>(test: D, spec?: SpecDescribe) => D = (
-  test,
-  spec,
-) => {
-  if (spec) Reflect.set(test, SpecDescribeSymbol, spec);
-  return test;
 };
 
 enum IDKind {
@@ -40,15 +32,15 @@ type FlagsOptions = {
 };
 
 const flagsRules: Rule<FlagsOptions>[] = [
-  [flag("--uuid", "--uuid-v4"), () => outputIDKind = IDKind.uuid],
-  [flag("--ulid"), () => outputIDKind = IDKind.ulid],
+  [describe(flag("--uuid", "--uuid-v4"), { description: 'make a uuid value' }), () => outputIDKind = IDKind.uuid],
+  [describe(flag("--ulid"), { description: 'mae a ulid id. (Default)' }), () => outputIDKind = IDKind.ulid],
   [
-    describe(flag("--ulid-seed-time"), { withValue: true }),
+    describe(flag("--ulid-seed-time"), { description: 'input a seed time', names: ['--ulid-seed-time <value>'] }),
     isNumberAt("ulidSeedTime"),
   ],
-  [flag("--objectid"), () => outputIDKind = IDKind.objectid],
-  [flag("--zero", "-z"), () => endWithNewLine = false],
-  [flag("--help", "-h"), () => handlerKind = HandlerKind.help],
+  [describe(flag("--objectid"), { description: 'make a objectid value' }), () => outputIDKind = IDKind.objectid],
+  [describe(flag("--zero", "-z"), { description: 'ignore newline on output' }), () => endWithNewLine = false],
+  [describe(flag("--help", "-h"), { description: 'display this help' }), () => handlerKind = HandlerKind.help],
 ];
 
 const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
@@ -65,35 +57,26 @@ const printCommands: Record<IDKind, () => Uint8Array | Promise<Uint8Array>> = {
 
 const handlers = {
   help() {
-    const usageLine = `Usage: uid`;
-
-    const help = flagsRules.reduce((acc: null | string, [test]) => {
-      const spec = getDescribe(test);
-
-      let contact: null | string = null;
-
-      for (const name of test.names ?? []) {
-        const label = spec.withValue ? `${name} <value>` : name;
-        contact = contact ? `${contact} [${label}]` : `[${label}]`;
-      }
-
-      return contact ? acc ? `${acc} ${contact}` : contact : acc;
-    }, null);
-
-    return new TextEncoder().encode(`${usageLine} ${help}`);
+    endWithNewLine = false
+    return new TextEncoder().encode(makeHelmMessage('uid', flagsRules, [
+      '--uuid',
+      '--ulid-seed-time 1000',
+      '--objectid',
+      '--objectid -z',
+    ]));
   },
   async render_id() {
     return await printCommands[outputIDKind]();
   },
 } satisfies Record<HandlerKind, () => Uint8Array | Promise<Uint8Array>>;
 
-const parsed = flags<FlagsOptions>(Deno.args, {}, flagsRules);
+const parsed = flags<FlagsOptions>(Bun.argv.slice(2), {}, flagsRules);
 
 ulidSeedTime = parsed.ulidSeedTime;
 
 const output = await handlers[handlerKind]();
 
-Deno.stdout.write(output);
+process.stdout.write(output);
 if (endWithNewLine) {
-  Deno.stdout.write(new TextEncoder().encode(`\n`));
+  process.stdout.write(new TextEncoder().encode(`\n`));
 }

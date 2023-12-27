@@ -1,4 +1,6 @@
 {
-  "deno.enable": true,
-  "deno.unstable": true
+    "cSpell.words": [
+        "bson",
+        "esnext"
+    ]
 }
