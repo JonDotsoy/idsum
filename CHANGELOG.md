@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.1](https://github.com/JonDotsoy/uid/compare/v1.4.0...v1.4.1) (2023-12-27)
+
+
+### Features
+
+* add support show processor on display version ([2db82f2](https://github.com/JonDotsoy/uid/commit/2db82f26f6302e48a9693a79e2d2250a4ae3de02))
+
+
+### Miscellaneous Chores
+
+* release v1.4.1 ([73a9e24](https://github.com/JonDotsoy/uid/commit/73a9e24f64f19dfdfe669f0de2877a3bef60e925))
+
 ## [1.4.0](https://github.com/JonDotsoy/uid/compare/v1.3.1...v1.4.0) (2023-12-27)
 
 
