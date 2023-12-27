@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.1](https://github.com/JonDotsoy/uid/compare/v1.3.0...v1.3.1) (2023-12-27)
+
+
+### Features
+
+* upgrade release-place ([4c492f3](https://github.com/JonDotsoy/uid/commit/4c492f376cd7eb73a5b325366f891b5d550cc68c))
+* upgrade secret on workflow ([05d78cf](https://github.com/JonDotsoy/uid/commit/05d78cfe04da730c1fa737e63673c41bb621c6d2))
+
+
+### Miscellaneous Chores
+
+* release v1.3.1 ([640e914](https://github.com/JonDotsoy/uid/commit/640e9142f7ea737b01aff813477fe8286d6fa0bc))
+
 ## [1.1.0](https://github.com/JonDotsoy/uid/compare/v1.0.0...v1.1.0) (2023-07-18)
 
 
