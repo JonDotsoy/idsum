@@ -1,3 +1,4 @@
+import { getProcessor, version } from "./load-version" with { type: "macro" }
 import { ulid } from "ulid";
 import { ObjectId } from "bson";
 import { flag, flags, isNumberAt, Rule, Test, makeHelmMessage, describe } from "@jondotsoy/flags";
@@ -18,6 +19,7 @@ enum IDKind {
 }
 
 enum HandlerKind {
+  version = "version",
   help = "help",
   render_id = "render_id",
 }
@@ -40,6 +42,7 @@ const flagsRules: Rule<FlagsOptions>[] = [
   ],
   [describe(flag("--objectid"), { description: 'make a objectid value' }), () => outputIDKind = IDKind.objectid],
   [describe(flag("--zero", "-z"), { description: 'ignore newline on output' }), () => endWithNewLine = false],
+  [describe(flag("--version", "-v"), { description: 'display version' }), () => handlerKind = HandlerKind.version],
   [describe(flag("--help", "-h"), { description: 'display this help' }), () => handlerKind = HandlerKind.help],
 ];
 
@@ -68,6 +71,10 @@ const handlers = {
   async render_id() {
     return await printCommands[outputIDKind]();
   },
+  version() {
+    const processor = getProcessor()
+    return new TextEncoder().encode(`uid v${version()}${processor ? ` ${processor}` : ``}`)
+  }
 } satisfies Record<HandlerKind, () => Uint8Array | Promise<Uint8Array>>;
 
 const parsed = flags<FlagsOptions>(Bun.argv.slice(2), {}, flagsRules);
