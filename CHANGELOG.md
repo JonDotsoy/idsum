@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/JonDotsoy/uid/compare/v1.3.1...v1.4.0) (2023-12-27)
+
+
+### Features
+
+* add version.txt file ([b693268](https://github.com/JonDotsoy/uid/commit/b693268d9770d314cb843a9779f6cdf14ebd6c92))
+
 ## [1.3.1](https://github.com/JonDotsoy/uid/compare/v1.3.0...v1.3.1) (2023-12-27)
 
 
