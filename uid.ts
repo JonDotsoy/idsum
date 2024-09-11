@@ -75,6 +75,7 @@ const handlers = {
       '--ulid-seed-time 1000',
       '--objectid',
       '--objectid -z',
+      '--nanoid [--nanoid-size 10]',
     ]));
   },
   async render_id() {
