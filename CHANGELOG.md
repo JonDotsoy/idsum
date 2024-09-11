@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/JonDotsoy/uid/compare/v1.4.1...v1.5.0) (2024-09-11)
+
+
+### Features
+
+* add support to nanoid ([6c73596](https://github.com/JonDotsoy/uid/commit/6c73596128bfd79369d8abeeba811fa7671dd2e1))
+* update help documentation ([1750766](https://github.com/JonDotsoy/uid/commit/175076658b81a6380e05d6b1cbc7263cd64b187f))
+
 ## [1.4.1](https://github.com/JonDotsoy/uid/compare/v1.4.0...v1.4.1) (2023-12-27)
 
 
